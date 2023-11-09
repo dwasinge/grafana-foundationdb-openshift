@@ -1,0 +1,24 @@
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDatasource
+metadata:
+  name: {{ include "grafanafdb.fullname" . }}-ds
+  labels:
+    {{- include "grafanafdb.labels" . | nindent 4 }}
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: {{ .Values.grafana.dashboards }}
+  datasource:
+    name: {{ .Values.grafana.datasource.name }}
+    type: prometheus
+    access: proxy
+    url: 'https://thanos-querier.openshift-monitoring.svc.cluster.local:9091'
+    isDefault: true
+    jsonData:
+      'httpHeaderName1': "Authorization"
+      'tlsSkipVerify': true
+      'timeInterval': "5s"
+    editable: true
+    secureJsonData:
+      httpHeaderValue1: >-
+        Bearer {{ .Values.grafana.datasource.bearerToken }}

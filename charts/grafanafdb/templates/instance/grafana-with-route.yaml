@@ -1,0 +1,27 @@
+apiVersion: grafana.integreatly.org/v1beta1
+kind: Grafana
+metadata:
+  name: {{ include "grafanafdb.fullname" . }}-dashboard-cm
+  labels:
+    {{- include "grafanafdb.labels" . | nindent 4 }}
+    dashboards: {{ .Values.grafana.dashboards }}
+spec:
+  config:
+    log:
+      mode: "console"
+    auth:
+      disable_login_form: "false"
+    security:
+      admin_user: {{ .Values.grafana.security.adminUser }}
+      admin_password: {{ .Values.grafana.security.adminPassword }}
+  service:
+    spec:
+      ports:
+        - name: grafana-proxy
+          port: 9090
+          protocol: TCP
+          targetPort: 3000
+  route:
+    spec:
+      port:
+        targetPort: 3000

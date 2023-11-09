@@ -1,0 +1,8 @@
+grafana:
+  dashboards: fdb
+  security:
+    adminUser: root
+    adminPassword: secret
+  datasource:
+    name: Prometheus
+    bearerToken: token

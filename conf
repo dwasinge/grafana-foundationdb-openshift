@@ -1,0 +1,6 @@
+fdb_cluster_name=fdb-cluster
+fdb_namespace=fdb
+grafana_namespace=grafana-operator
+grafana_operator_version=v5.4.2
+openshift_monitoring_namespace=openshift-monitoring
+openshift_user_workload_monitoring_namespace=openshift-user-workload-monitoring

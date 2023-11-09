@@ -1,0 +1,14 @@
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: {{ include "grafanafdb.fullname" . }}-dashboard
+  labels:
+    {{- include "grafanafdb.labels" . | nindent 4 }}
+spec:
+  resyncPeriod: 30s
+  instanceSelector:
+    matchLabels:
+      dashboards: {{ .Values.grafana.dashboards }}
+  configMapRef:
+    name: {{ include "grafanafdb.fullname" . }}-dashboard-cm
+    key: dashboard-fdb.json

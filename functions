@@ -1,0 +1,138 @@
+configure_openshift_monitoring() {
+
+    oc apply -f config/openshift-monitoring/cluster-monitoring-config.yaml
+    oc apply -f config/openshift-monitoring/user-workload-monitoring-config.yaml
+
+}
+
+revert_openshift_monitoring() {
+
+    oc project openshift-user-workload-monitoring
+    oc delete configmap user-workload-monitoring-config
+    oc apply -f config/openshift-monitoring/cluster-monitoring-config-default.yaml
+
+}
+
+configure_grafana_thanos_rbac() {
+
+    # create namespace if not found
+    namespace=$(oc get projects | grep $grafana_namespace)
+    if [ -z "$namespace" ]
+    then
+       oc new-project $grafana_namespace
+    fi
+
+    # create service account, service account token, and role binding
+    cp config/rbac/grafana-thanos.yaml config/rbac/tmp.yaml
+    sed -i '' "s/GRAFANA_NAMESPACE/$grafana_namespace/" config/rbac/tmp.yaml    
+    oc apply -f config/rbac/tmp.yaml
+    rm config/rbac/tmp.yaml
+
+}
+
+remove_grafana_thanos_rbac() {
+
+    oc project $grafana_namespace
+    oc delete clusterrolebinding grafana-cluster-monitoring-view
+    oc delete secret grafana-thanos-token
+    oc delete serviceaccount grafana-thanos
+
+}
+
+install_fdb_operator() {
+
+    # prep rbac file
+    cp config/fdb/operator/crb.fdb-scc.yaml config/fdb/operator/crb.yaml
+    cp config/fdb/operator/scc.fdb-scc.yaml config/fdb/operator/scc.yaml
+
+    # set namespace in crb
+    echo "setting namespace to $fdb_namespace"
+    sed -i '' "s/FDB_NAMESPACE/$fdb_namespace/" config/fdb/operator/crb.yaml
+
+    # clone operator repository
+    git clone git@github.com:FoundationDB/fdb-kubernetes-operator.git
+
+    #  add scc and crb to repository
+    mv config/fdb/operator/scc.yaml fdb-kubernetes-operator/charts/fdb-operator/templates/rbac
+    mv config/fdb/operator/crb.yaml fdb-kubernetes-operator/charts/fdb-operator/templates/rbac
+
+    # install operator
+    helm install fdb-operator fdb-kubernetes-operator/charts/fdb-operator --namespace $fdb_namespace --create-namespace --wait
+
+}
+
+uninstall_fdb_operator() {
+
+    oc project $fdb_namespace
+    helm uninstall fdb-operator --wait
+
+}
+
+install_fdb_cluster() {
+
+    oc project $fdb_namespace
+    oc apply -f config/fdb/cluster/fdb-cluster.yaml
+
+}
+
+uninstall_fdb_cluster() {
+
+    oc project $fdb_namespace
+    oc delete foundationdbcluster $fdb_cluster_name
+
+}
+
+install_fdb_exporter() {
+
+    helm install fdb-exporter charts/fdbexporter --namespace $fdb_namespace --wait
+
+}
+
+uninstall_fdb_exporter() {
+
+    oc project $fdb_namespace
+    helm uninstall fdb-exporter --wait
+
+}
+
+install_grafana_operator() {
+
+    helm upgrade -i grafana-operator oci://ghcr.io/grafana-operator/helm-charts/grafana-operator --version $grafana_operator_version --namespace $grafana_namespace --create-namespace --wait
+
+}
+
+uninstall_grafana_operator() {
+
+    oc project $grafana_namespace
+    helm uninstall grafana-operator --wait
+
+}
+
+install_fdb_grafana() {
+
+    # get sa token for datasource
+    sa_token=`oc extract secret/grafana-thanos-token -n $grafana_namespace --keys=token --to=-`
+
+    # install grafana fdb
+    helm install grafana-fdb charts/grafanafdb --set grafana.datasource.bearerToken=$sa_token --namespace $grafana_namespace  --create-namespace --wait
+
+}
+
+uninstall_fdb_grafana() {
+
+    oc project $grafana_namespace
+    helm install grafana-fdb --wait
+
+}
+
+remove_fdb_ns() {
+
+    oc delete project $fdb_namespace
+
+}
+
+remove_grafana_ns() {
+
+    oc delete project $grafana_namespace
+
+}

@@ -1,0 +1,10 @@
+source ./conf
+source ./functions
+
+configure_openshift_monitoring
+configure_grafana_thanos_rbac
+install_fdb_operator
+install_fdb_cluster
+install_fdb_exporter
+install_grafana_operator
+install_fdb_grafana
