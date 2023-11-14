@@ -136,3 +136,36 @@ remove_grafana_ns() {
     oc delete project $grafana_namespace
 
 }
+
+wait_for_cluster_file() {
+
+    oc project $fdb_namespace
+
+    elapsedTime=0
+    clusterFile=""
+
+    echo "Waiting for FoundationDB Cluster File to be populated..."
+
+    until [ "$clusterFile" != "" ]
+    do
+
+        clusterFile=`oc get cm $clusterFileConfigMap -o "jsonpath={ .data['$clusterFileConfigMapKey'] }"`
+        if [ "$clusterFile" == "" ]
+        then
+            sleep $sleepInterval
+            elaspedTime=$((elaspedTime+$sleepInterval))
+            echo "    Elapsed Time: $elaspedTime sec, Sleeping another $sleepInterval sec"
+        fi
+
+        # exit if timeout reached
+        if [ "$elaspedTime" == "$timeoutInSeconds" ]
+        then
+            echo "Timeout waiting for cluster file to be populated."
+            exit 1
+        fi
+
+    done
+
+    echo "FoundationDB Cluster File has been populated."
+
+}

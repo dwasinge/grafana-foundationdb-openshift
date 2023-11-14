@@ -5,6 +5,7 @@ configure_openshift_monitoring
 configure_grafana_thanos_rbac
 install_fdb_operator
 install_fdb_cluster
+wait_for_cluster_file
 install_fdb_exporter
 install_grafana_operator
 install_fdb_grafana
